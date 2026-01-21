@@ -31,6 +31,32 @@ with st.sidebar:
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
     st.divider()
+    # --- 這裡開始是下載範例區 ---
+    st.divider()
+    st.subheader("📥 範例範本下載")
+    st.caption("請下載範本，填寫完後再於下方上傳。")
+
+    # 定義檔案列表 (檔案名稱必須跟您上傳到 GitHub 的檔名完全一樣)
+    templates = {
+        "配課表範本 (Excel)": "配課表.xlsx",
+        "課表範本 (Excel)": "課表.xlsx",
+        "教師排序表範本 (Excel)": "教師排序表.xlsx"
+    }
+
+    for label, file_name in templates.items():
+        try:
+            with open(file_name, "rb") as f:
+                st.download_button(
+                    label=f"⬇️ {label}",
+                    data=f,
+                    file_name=file_name,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"dl_{file_name}" # 避免 key 重複
+                )
+        except FileNotFoundError:
+            st.warning(f"請將 {file_name} 上傳至 GitHub 根目錄")
+    st.divider()
+    # --- 下載區結束 ---
     f_temp_class = st.file_uploader("1. 班級樣板 (docx)", type=["docx"])
     f_temp_teacher = st.file_uploader("2. 教師樣板 (docx)", type=["docx"])
     f_assign = st.file_uploader("3. 上傳【配課表】", type=["xlsx", "csv"])
@@ -187,4 +213,5 @@ if 'class_data' in st.session_state:
                 if main_doc:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師合併檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
+
     st.info("👋 請上傳必要檔案並點擊「🚀 執行全系統整合」。若更換檔案後報錯，請先點擊左側「🧹 清空所有資料」。")
