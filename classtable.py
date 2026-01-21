@@ -208,7 +208,7 @@ if 'class_data' in st.session_state:
                 for d, p in [(d,p) for d in range(1,6) for p in range(1,9)]:
                     v = st.session_state.teacher_data[target_t].get((d,p), {"subj":"","class":""})
                     master_replace(doc, f"{{{{CD{d}P{p}}}}}", v['class']); master_replace(doc, f"{{{{SD{d}P{p}}}}}", v['subj'])
-                buf = BytesIO(); doc.save(buf); st.download_button("💾 儲存 {target_t}_教師課表", buf.getvalue(), f"{target_t}_教師課表.docx")
+                buf = BytesIO(); doc.save(buf); st.download_button(f"💾 儲存 {target_t}_教師課表", buf.getvalue(), f"{target_t}_教師課表.docx")
         with bt2:
             sel_t_batch = st.multiselect("批次合併教師", teachers, default=teachers)
             if st.button("🚀 執行教師合併列印"):
@@ -228,5 +228,6 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 請上傳資料檔並點擊執行整合。")
+
 
 
