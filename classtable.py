@@ -159,13 +159,13 @@ if 'class_data' in st.session_state:
 
         bc1, bc2 = st.columns(2)
         with bc1:
-            if st.button(f"📥 下載 {target_c} Word"):
+            if st.button(f"📥 下載 {target_c} 課表"):
                 doc = Document(BytesIO(st.session_state.class_template))
                 master_replace(doc, "{{CLASS}}", target_c)
                 for d, p in [(d,p) for d in range(1,6) for p in range(1,9)]:
                     v = st.session_state.class_data[target_c].get((d,p), {"subj":"","teacher":""})
                     master_replace(doc, f"{{{{SD{d}P{p}}}}}", v['subj']); master_replace(doc, f"{{{{TD{d}P{p}}}}}", v['teacher'])
-                buf = BytesIO(); doc.save(buf); st.download_button("💾 儲存單獨檔", buf.getvalue(), f"{target_c}_班級課表.docx")
+                buf = BytesIO(); doc.save(buf); st.download_button(f"💾 儲存 {target_c} 課表", buf.getvalue(), f"{target_c}_班級課表.docx")
         with bc2:
             sel_c_batch = st.multiselect("勾選批次合併", classes, default=classes)
             if st.button("🚀 執行班級合併列印"):
@@ -228,6 +228,7 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 請上傳資料檔並點擊執行整合。")
+
 
 
 
