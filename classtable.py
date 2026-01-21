@@ -117,9 +117,9 @@ with st.sidebar:
                     if not s_raw or s_raw == "nan" or s_raw == "":
                         display_t = ""
                         s_raw = ""  # 讓科目也保持空白，不要出現 nan
-                        else:
-                            curr_t_list = [item['t'] for item in assign_lookup if item['c'] == c_raw and item['s'] == s_raw]
-                            display_t = "/".join(curr_t_list) if curr_t_list else "未知教師"
+                    else:
+                        curr_t_list = [item['t'] for item in assign_lookup if item['c'] == c_raw and item['s'] == s_raw]
+                        display_t = "/".join(curr_t_list) if curr_t_list else "未知教師"
                     
                     if c_raw not in class_data: class_data[c_raw] = {}
                     class_data[c_raw][(d, p)] = {"subj": s_raw, "teacher": display_t}
@@ -245,6 +245,7 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 請上傳資料檔並點擊執行整合。")
+
 
 
 
