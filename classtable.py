@@ -4,7 +4,7 @@ from docx import Document
 from io import BytesIO
 import re
 
-st.set_page_config(page_title="後龍國中課表管理系統", layout="wide")
+st.set_page_config(page_title="課表彙整系統", layout="wide")
 
 # --- 核心替換函數 ---
 def master_replace(doc_obj, old_text, new_text):
@@ -50,7 +50,7 @@ with st.sidebar:
     for label, file_name in data_templates.items():
         try:
             with open(file_name, "rb") as f:
-                st.download_button(label=f"⬇️ {label}", data=f, file_name=file_name, key=f"dl_{file_name}")
+                st.download_button(label=f"{label}", data=f, file_name=file_name, key=f"dl_{file_name}")
         except FileNotFoundError:
             st.caption(f"⚠️ 找不到 {file_name}")
     st.divider()
@@ -228,3 +228,4 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 歡迎！請上傳 3 個資料檔並點擊執行整合。")
+
