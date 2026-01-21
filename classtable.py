@@ -112,6 +112,13 @@ with st.sidebar:
                     d, p_match = day_map.get(str(row['星期']).strip(), 0), re.search(r'\d+', str(row['節次']))
                     if not (p_match and d > 0): continue
                     p = int(p_match.group())
+
+                    # 修正：先檢查科目是否為空，如果是空的，就不去配課表找老師
+                    if not s_raw or s_raw == "nan" or s_raw == "":
+                        display_t = ""
+                        s_raw = ""  # 讓科目也保持空白，不要出現 nan
+                     else:
+        # 只有在科目有字的時候，才去 assign_lookup 找老師
                     
                     curr_t_list = [item['t'] for item in assign_lookup if item['c'] == c_raw and item['s'] == s_raw]
                     display_t = "/".join(curr_t_list) if curr_t_list else "未知教師"
@@ -161,17 +168,29 @@ if 'class_data' in st.session_state:
         with bc1:
             if st.button(f"📥 下載 {target_c} 課表"):
                 doc = Document(BytesIO(st.session_state.class_template))
+                # [關鍵修正 1]：執行班級與導師的替換
                 master_replace(doc, "{{CLASS}}", target_c)
+                tutor_name = st.session_state.tutors_map.get(target_c, "未設定")
+                master_replace(doc, "{{TUTOR}}", tutor_name) 
+                
                 for d, p in [(d,p) for d in range(1,6) for p in range(1,9)]:
                     v = st.session_state.class_data[target_c].get((d,p), {"subj":"","teacher":""})
-                    master_replace(doc, f"{{{{SD{d}P{p}}}}}", v['subj']); master_replace(doc, f"{{{{TD{d}P{p}}}}}", v['teacher'])
-                buf = BytesIO(); doc.save(buf); st.download_button(f"💾 儲存 {target_c} 課表", buf.getvalue(), f"{target_c}_班級課表.docx")
+                    master_replace(doc, f"{{{{SD{d}P{p}}}}}", v['subj'])
+                    master_replace(doc, f"{{{{TD{d}P{p}}}}}", v['teacher'])
+                
+                buf = BytesIO()
+                doc.save(buf)
+                st.download_button(f"💾 儲存 {target_c} 課表", buf.getvalue(), f"{target_c}_班級課表.docx")
         with bc2:
             sel_c_batch = st.multiselect("勾選批次合併", classes, default=classes)
             if st.button("🚀 執行班級合併列印"):
                 main_doc = None
                 for i, cname in enumerate(sel_c_batch):
                     tmp = Document(BytesIO(st.session_state.class_template)); master_replace(tmp, "{{CLASS}}", cname)
+                    
+                    master_replace(tmp, "{{CLASS}}", cname)
+                    master_replace(tmp, "{{TUTOR}}", st.session_state.tutors_map.get(cname, "未設定"))
+                    
                     for d, p in [(d,p) for d in range(1,6) for p in range(1,9)]:
                         v = st.session_state.class_data[cname].get((d,p), {"subj":"","teacher":""})
                         master_replace(tmp, f"{{{{SD{d}P{p}}}}}", v['subj']); master_replace(tmp, f"{{{{TD{d}P{p}}}}}", v['teacher'])
@@ -228,6 +247,7 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 請上傳資料檔並點擊執行整合。")
+
 
 
 
