@@ -3,9 +3,8 @@ import pandas as pd
 from docx import Document
 from io import BytesIO
 import re
-import os
 
-st.set_page_config(page_title="後龍國中課表管理系統-樣板內建版", layout="wide")
+st.set_page_config(page_title="後龍國中課表管理系統-簡潔版", layout="wide")
 
 # --- 核心替換函數 ---
 def master_replace(doc_obj, old_text, new_text):
@@ -25,59 +24,56 @@ def master_replace(doc_obj, old_text, new_text):
             for i, run in enumerate(p.runs):
                 run.text = updated_text if i == 0 else ""
 
+# --- 讀取內建樣板函數 ---
+def load_default_template(file_name):
+    try:
+        with open(file_name, "rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        return None
+
 # --- 側邊欄 ---
 with st.sidebar:
     st.header("⚙️ 資料管理")
-    if st.button("🧹 清空所有資料與重置"):
+    if st.button("打掉重練 (清空所有資料)"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
 
-    # --- 📥 範例範本下載區 (包含 Word 樣板下載) ---
+    # --- 📥 範例範本下載區 ---
     st.divider()
     st.subheader("📥 範本下載")
     templates = {
-        "1. 配課表範本": "配課表.xlsx",
-        "2. 課表範本": "課表.xlsx",
-        "3. 教師排序表範本": "教師排序表.xlsx",
-        "4. 班級 Word 樣板": "班級樣板.docx",
-        "5. 教師 Word 樣板": "教師樣板.docx"
+        "配課表範本": "配課表.xlsx",
+        "課表範本": "課表.xlsx",
+        "教師排序表範本": "教師排序表.xlsx",
+        "班級 Word 樣板": "班級樣板.docx",
+        "教師 Word 樣板": "教師樣板.docx"
     }
     for label, file_name in templates.items():
         try:
             with open(file_name, "rb") as f:
                 st.download_button(label=f"⬇️ {label}", data=f, file_name=file_name, key=f"dl_{file_name}")
         except FileNotFoundError:
-            st.caption(f"⚠️ 尚未偵測到 {file_name}")
+            st.caption(f"⚠️ 找不到 {file_name}")
     st.divider()
 
-    # --- 📤 檔案上傳區 (Word 樣板變為選填) ---
-    st.subheader("📤 上傳資料")
-    f_temp_class = st.file_uploader("1. (選填) 更新班級 Word 樣板", type=["docx"])
-    f_temp_teacher = st.file_uploader("2. (選填) 更新教師 Word 樣板", type=["docx"])
-    f_assign = st.file_uploader("3. 上傳【配課表】", type=["xlsx", "csv"])
-    f_time = st.file_uploader("4. 上傳【課表】", type=["xlsx", "csv"])
-    f_sort = st.file_uploader("5. 上傳【教師排序暨時數表】", type=["xlsx", "csv"])
+    # --- 📤 檔案上傳區 (僅保留 3 個資料檔) ---
+    st.subheader("📤 上傳資料檔")
+    f_assign = st.file_uploader("1. 上傳【配課表】", type=["xlsx", "csv"])
+    f_time = st.file_uploader("2. 上傳【課表】", type=["xlsx", "csv"])
+    f_sort = st.file_uploader("3. 上傳【教師排序暨時數表】", type=["xlsx", "csv"])
     
-    # --- 樣板讀取邏輯 (手動上傳優先，其次讀取 GitHub 內建) ---
-    def get_template_bytes(uploaded_file, default_name):
-        if uploaded_file:
-            return uploaded_file.getvalue()
-        try:
-            with open(default_name, "rb") as f:
-                return f.read()
-        except:
-            return None
-
     if f_assign and f_time and st.button("🚀 執行全系統整合"):
-        with st.spinner("處理資料整合中..."):
+        with st.spinner("讀取內建樣板並整合資料中..."):
+            # 讀取 Excel
             df_assign = pd.read_csv(f_assign) if f_assign.name.endswith('.csv') else pd.read_excel(f_assign)
             df_time = pd.read_csv(f_time) if f_time.name.endswith('.csv') else pd.read_excel(f_time)
             
-            # 取得樣板
-            st.session_state.class_template = get_template_bytes(f_temp_class, "班級樣板.docx")
-            st.session_state.teacher_template = get_template_bytes(f_temp_teacher, "教師樣板.docx")
+            # 讀取內建 Word 樣板
+            st.session_state.class_template = load_default_template("班級樣板.docx")
+            st.session_state.teacher_template = load_default_template("教師樣板.docx")
 
-            # 1. 解析配課 (支援斜線多老師)
+            # 1. 解析配課 (多師共課拆解)
             assign_lookup, all_teachers_db, tutors = [], set(), {}
             for _, row in df_assign.iterrows():
                 c, s, t_raw = str(row['班級']).strip(), str(row['科目']).strip(), str(row['教師']).strip()
@@ -131,7 +127,7 @@ with st.sidebar:
             })
             st.rerun()
 
-# --- 主介面 ---
+# --- 主介面與預覽邏輯 (維持顯示科目老師，功能完全保留) ---
 if 'class_data' in st.session_state:
     tab1, tab2 = st.tabs(["🏫 班級課表預覽", "👩‍🏫 教師課表預覽"])
 
@@ -182,6 +178,7 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載班級彙整檔", buf.getvalue(), "全校班級課表.docx")
 
     with tab2:
+        # (教師分頁邏輯維持不變，包含預覽與下載合併功能)
         teachers = st.session_state.ordered_teachers
         curr_t = st.session_state.get('sel_teacher', teachers[0])
         colt1, colt2, colt3 = st.columns([1, 2, 1])
@@ -195,14 +192,8 @@ if 'class_data' in st.session_state:
         base, total = int(st.session_state.base_hours.get(target_t, 0)), int(st.session_state.total_counts.get(target_t, 0))
         m1, m2, m3 = st.columns(3); m1.metric("應授時數", f"{base} 節"); m2.metric("教學總時數", f"{total} 節"); m3.metric("兼代課時數", f"{total-base} 節")
         
-        t_preview_table = []
-        for p in range(1, 9):
-            row_data = {"節次": f"第 {p} 節"}
-            for d in range(1, 6):
-                info = st.session_state.teacher_data[target_t].get((d,p), {})
-                row_data[f"週{d}"] = f"{info.get('class','')} {info.get('subj','')}".strip()
-            t_preview_table.append(row_data)
-        st.table(pd.DataFrame(t_preview_table))
+        t_prev = [{"節次": f"第 {p} 節", **{f"週{d}": f"{st.session_state.teacher_data[target_t].get((d,p),{}).get('class','')} {st.session_state.teacher_data[target_t].get((d,p),{}).get('subj','')}".strip() for d in range(1,6)}} for p in range(1,9)]
+        st.table(pd.DataFrame(t_prev))
 
         bt1, bt2 = st.columns(2)
         with bt1:
@@ -232,4 +223,4 @@ if 'class_data' in st.session_state:
                 if main_doc:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
-    st.info("👋 歡迎！請先確認 GitHub 已包含樣板，或於下方手動上傳檔案。")
+    st.info("👋 歡迎使用！請上傳 3 個資料檔並執行整合。")
