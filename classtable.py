@@ -61,7 +61,7 @@ with st.sidebar:
     f_time = st.file_uploader("2. 上傳【課表】", type=["xlsx", "csv"])
     f_sort = st.file_uploader("3. 上傳【教師排序暨時數表】", type=["xlsx", "csv"])
     
-    if f_assign and f_time and st.button("🚀 執行全系統整合"):
+    if f_assign and f_time and st.button("🚀 執行整合"):
         # 自動抓取後台 Word 樣板
         class_temp = load_default_template("班級樣板.docx")
         teacher_temp = load_default_template("教師樣板.docx")
@@ -228,6 +228,7 @@ if 'class_data' in st.session_state:
                     buf = BytesIO(); main_doc.save(buf); st.download_button("💾 下載教師彙整檔", buf.getvalue(), "全校教師課表_彙整.docx")
 else:
     st.info("👋 請上傳資料檔並點擊執行整合。")
+
 
 
 
